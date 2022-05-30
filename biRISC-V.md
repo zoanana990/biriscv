@@ -2,13 +2,12 @@
 
 ###### tags: `Computer Architecture`
 
-:::warning
 ## Expectation (Goal)
 1. biRISC 和課堂提到的 RISC-V 處理器實作很不同， 本質是 superscalar (dual-issue) in-order 6 or 7 stage pipeline，是進階的處理器實作，但在本專題中，你們只要專注在 biRISC 的 datapath, control, pipeline 的內部設計
 2. 使用 Verilator 工具可用來確認 biRISC 的 RV32IMZicsr 指令的 datapath 和 control
 3. 探討 6 or 7 stage pipeline 的設計，搭配分析對應的波形圖，特別是解讀如何達到 dual-issue
 4. 在共筆記錄你們的探索過程，及相關問題
-:::
+
 ## Environment Setup
 1. Cloning: To clone this project and its dependencies
    > git clone --recursive https://github.com/ultraembedded/biriscv.git
@@ -76,7 +75,6 @@ In [biRISC-V](https://github.com/ultraembedded/biriscv), We can find that there 
   In the beginning, We use the test.elf in the folder **/src/tb/tb_core_icaris** to analyze biRISC-V core.
   From the 29 line instruction of Makefile, we can find out what verilog file we will use. 
   > SRC_V ?= $(foreach src,$(SRC_V_DIR),$(wildcard $(src)/*.v)
-  :::spoiler the verilog files will use
   ```shell=
     biriscv_pipe_ctrl.v 
     biriscv_alu.v
@@ -102,7 +100,6 @@ In [biRISC-V](https://github.com/ultraembedded/biriscv), We can find that there 
     tb_top.v 
     tcm_mem_ram.v
   ```
-  :::
   
   According these files, we can find out how biRISC-V CPU work, and next step we will analyze the datapath, control, and pipeline of biRISC-V.
   
@@ -210,7 +207,6 @@ To understand how pc(program counter) work, We trace the code in `biriscv_npc.v`
   ```
   
   The following source code from `biriscv_fetch.v` is the I/O of the fetch stage. We can know that the birisc-v get instruction from icache, and there are some control bits of cache, like valid, accept and error...
-  :::spoiler I/O 
   ```verilog=
     // Inputs
      input           clk_i
@@ -244,7 +240,6 @@ To understand how pc(program counter) work, We trace the code in `biriscv_npc.v`
     ,output          pc_accept_o
 
   ```
-  :::
   
 - Datapath
   In datapath, we find a special design called [Skid Buffer](http://fpgacpu.ca/fpga/Pipeline_Skid_Buffer.html).
@@ -301,7 +296,6 @@ To understand how pc(program counter) work, We trace the code in `biriscv_npc.v`
 
 #### Analyze by source code
 we need to see the definitions in `biriscv_defs.v`, and there are the instruction definitions which is shown as following below
-:::spoiler Definition of Instruction and Instruction Mask
 ```verilog=
 //--------------------------------------------------------------------
 // Instructions Masks
@@ -419,7 +413,6 @@ we need to see the definitions in `biriscv_defs.v`, and there are the instructio
 `define INST_BLTU_MASK 32'h707f
 
 ...
-:::
 
 The module structure in decode stage
 ```Tree=
@@ -431,7 +424,6 @@ So we need to know these three module which is in `biriscv_decode.v` and `birisc
 
 1. `biriscv_decoder` 
    This module here is to decode the instrution by opcode, analyze which type instruction is, and which operation the processor need to takes
-   :::spoiler I/O ports
    ```verilog=
     module biriscv_decoder
     (
@@ -450,7 +442,6 @@ So we need to know these three module which is in `biriscv_decode.v` and `birisc
         ,output            rd_valid_o
     );
     ```
-    :::
     
 2. `fetch_fifo`
     - This is a instruction prefetch queue
@@ -463,7 +454,6 @@ So we need to know these three module which is in `biriscv_decode.v` and `birisc
         parameter OPC_INFO_W = 10             // Opcode size
     )
     ```
-    :::spoiler I/O Ports:
     ```verilog=
     (
      input                  clk_i           // clock
@@ -496,7 +486,6 @@ So we need to know these three module which is in `biriscv_decode.v` and `birisc
     );
 
     ```
-    :::
     
     - Here is how the buffer distribute the opcode to `decoder 0` and `decoder 1`
     ```verilog=
@@ -537,7 +526,6 @@ So we need to know these three module which is in `biriscv_decode.v` and `birisc
     Due to above code, there is the reason why PC of decoder1 and PC of decoder 2 have address difference of 4
     
 3. `biriscv_decode` which is combined with `biriscv_decoder` and `fetch_fifo`
-    :::spoiler I/O Ports:
     ```verilog=
     (
         // Inputs
@@ -573,7 +561,6 @@ So we need to know these three module which is in `biriscv_decode.v` and `birisc
         ...
     );
     ```
-    :::
 ### Issue Stage
 There are three units in this Stage, Controller, Divider and Register File.
 
@@ -581,7 +568,6 @@ There are three units in this Stage, Controller, Divider and Register File.
 - This register file just modified traditional 5-stages pipeline. Here is no write back siganl, and we can read more register value for two pipelines.
 - Data flow in register files
   ![](https://i.imgur.com/E86zPm9.png)
-:::spoiler I/O Ports
 ```verilog=
 (
     // Inputs
@@ -603,12 +589,10 @@ There are three units in this Stage, Controller, Divider and Register File.
     ,output [ 31:0]  rb1_value_o
 );
 ```
-:::
 #### DIV
 - Control
   The following source code is the I/O of divider in biRISC-V. It contains the signals which has decoded by decoder, like rd, rs1, rs2 and opcode ... .
   
-  :::spoiler I/O Ports
   ```verilog=
     // Inputs
      input           clk_i
@@ -627,7 +611,6 @@ There are three units in this Stage, Controller, Divider and Register File.
     ,output          writeback_valid_o
     ,output [ 31:0]  writeback_value_o  /* return value */
   ```
-  :::
   
   ![](https://i.imgur.com/OnBWEBE.png)
 
@@ -744,7 +727,6 @@ The parameters here are supporting the dual issue, multiplier and divider, load 
     end
     ```
 - biRISC-V supports fully-bypassing, and the code is shown as following: 
-    :::spoiler Fully-Bypassing
     ```verilog=
     always @ *
     begin
@@ -792,9 +774,7 @@ The parameters here are supporting the dual issue, multiplier and divider, load 
             issue_a_rb_value_r = 32'b0;
     end
     ```
-    :::
 * Control Unit send issue to hardware by the opcode of instruction
-    :::spoiler Controller issue
     ```verilog=
     //-------------------------------------------------------------
     // Load store unit
@@ -833,7 +813,8 @@ The parameters here are supporting the dual issue, multiplier and divider, load 
     assign csr_opcode_rb_operand_o  = opcode0_rb_operand_o;
     assign csr_opcode_invalid_o     = opcode_a_issue_r && issue_a_invalid_w;
     ```
-    :::
+    
+    
 
     
 ### ALU(E1) Stage
@@ -860,7 +841,6 @@ There are some operations in this stage, `ALU`, `LSU`, `CSU` and `MUL`
     `define ALU_LESS_THAN_SIGNED                    4'b1011
   ```
   
-  :::spoiler I/O Ports in ALU. 
   ```verilog=
     module biriscv_alu
     (
@@ -873,7 +853,7 @@ There are some operations in this stage, `ALU`, `LSU`, `CSU` and `MUL`
         ,output [ 31:0]  alu_p_o         // destinated register
     );
   ```
-  :::
+  
   From I/O, We can plot a simple graph. 
   ![](https://i.imgur.com/B56YUmj.jpg)
   
@@ -898,7 +878,6 @@ There are some operations in this stage, `ALU`, `LSU`, `CSU` and `MUL`
   ```
 #### LSU
 Load Store Unit used to load and store...
-:::spoiler I/O Ports
 ```verilog=
 (
     // Inputs
@@ -937,18 +916,14 @@ Load Store Unit used to load and store...
     ,output          stall_o
 );
 ```
-:::
 
-:::info
-CSR and MUL implement from the ALU stage(E1) to writeback stage(WB)
-:::
+***CSR and MUL implement from the ALU stage(E1) to writeback stage(WB)***
 
 #### CSR
 CSR(Control and Status Register) is used to deal with Exception, Interrupt and Storage Protection. There are two mode in CSR, machine mode and supervisor mode. In the standard user-level base ISA, only a handful of read-only counter CSRs are accessible.
 
 - Next State if the 
     - When the Interrupt enhanced in machine mode, CSR will save interrupt state, disabled it, enter supervisor mode and raise the priviledge to machine level.
-        :::spoiler source code
         ```verilog=
           // Interrupts
             if ((exception_i & `EXCEPTION_TYPE_MASK) == `EXCEPTION_INTERRUPT)
@@ -979,10 +954,8 @@ CSR(Control and Status Register) is used to deal with Exception, Interrupt and S
                         csr_mcause_r = `MCAUSE_INTERRUPT + 32'd`IRQ_M_EXT;
                 end
         ```
-        :::
 
     - When the Interrupt enhanced in supervisor mode, CSR will save interrupt state, disabled it, enter supervisor mode and raise the priviledge to super level.
-        :::spoiler source code
         ```verilog=
         begin
                 // Save interrupt / supervisor state
@@ -1008,7 +981,6 @@ CSR(Control and Status Register) is used to deal with Exception, Interrupt and S
                     csr_scause_r = `MCAUSE_INTERRUPT + 32'd`IRQ_S_EXT;
             end
         ```
-        :::
 
 #### MUL
 Here we will introduce the multiplier implemented in this project, multiplier is in `biriscv_multiplier.v`
@@ -1059,7 +1031,6 @@ The figure shown above is a x86-64 architecture not riscv, but the concept is si
 
 ## Requirement 2, Verilator Analyze
 In GTKwave, we mainly use the following siganl to analyze.
-:::info
 - next_pc_f_o: The next address of instruction that will be fetched by processor. (From biriscv_npc.v)
 - pc_f_q: The address of instruction is fetched from icache (From biriscv_fetch.v) 
 - pc_d_q: The address of instruction will be decoded by decoder (From biriscv_fetch.v)
@@ -1074,7 +1045,6 @@ In GTKwave, we mainly use the following siganl to analyze.
 - pc_e1_q: The address of instruction in E1 stage (From biriscv_pipe_ctrl.v)
 - pc_e2_q: The address of instruction in E2 stage (From biriscv_pipe_ctrl.v)
 - pc_wb_q: The address of instruction in WB stage (From biriscv_pipe_ctrl.v)
-:::
 ![](https://i.imgur.com/Z3069Lp.png)
 
 ### RV32I
@@ -1134,10 +1104,8 @@ In GTKwave, we mainly use the following siganl to analyze.
     80000670:	80002537          	lui	a0,0x80002
   ```
   The following picture is the result, and `beq	a4,a5,80000688` is executed in pipe0.
-  :::info
   - pipe0_branch_e1_w: Whether the instruction in E1 stage is branch instruction.
   - branch_exec0_is_taken_i: the branch instruction is taken.
-  :::
   1. We can know the branch prediction is the next instruction.
   2. When branch instruction in the E1 stage, biRISC-V will detect and determine that the branch is taken or not.
   3. There is a data hazard, at `addi a5, a5, 564` and `beq	a4, a5, 80000688`. From last example, we can know the result of `addi` will bypass to `beq`.
@@ -1148,7 +1116,6 @@ In GTKwave, we mainly use the following siganl to analyze.
 ### M standard extension
 - Multiplication Operations
   We observe the following code from test.elf, especially `mul a4,a4,a5`
-  :::info
   mul rd, rs1, rs2 
   &rarr; MUL performs an XLEN-bit(rs1) × XLEN-bit(rs2) multiplication and places the lower XLEN bits in the destination register(rd). In RV32IM, XLEN-bit means 32-bit.
   
@@ -1156,7 +1123,6 @@ In GTKwave, we mainly use the following siganl to analyze.
   - pipe0_mul_e1_w: Whether multiple instruction in the E1 stage. (In pipe0)
   - mulhi_sel_e1_q: Choose the higher XLEN bit or lower XLEN bit.
   - writeback_value_o: the result is bypassed from E2 or E3(WB) stage.
-  :::
   ```asm=
     800007c4:	def42823          	sw	a5,-528(s0)
     800007c8:	df042703          	lw	a4,-528(s0)
